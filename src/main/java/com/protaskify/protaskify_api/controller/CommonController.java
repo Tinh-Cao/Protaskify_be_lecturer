@@ -14,7 +14,10 @@ import org.springframework.data.domain.Page;
 import org.springframework.data.domain.PageRequest;
 import org.springframework.data.domain.Pageable;
 import org.springframework.data.domain.Sort;
+import org.springframework.messaging.Message;
 import org.springframework.messaging.handler.annotation.MessageMapping;
+import org.springframework.messaging.handler.annotation.Payload;
+import org.springframework.messaging.handler.annotation.SendTo;
 import org.springframework.messaging.simp.SimpMessagingTemplate;
 import org.springframework.web.bind.annotation.*;
 
@@ -37,6 +40,24 @@ public class CommonController {
 
 
     //--------------------Common--------------------
+    @MessageMapping("/message")
+    @SendTo("/chatroom/public")
+    public Messages receiveMessage(@Payload Messages message){
+        return message;
+    }
+
+    @MessageMapping("/private-message")
+    public Messages recMessage(@Payload Messages messages) {
+        String toId = messages.getLecturerId();
+        if (messages.getFromId().equals(messages.getLecturerId())) {
+            toId = messages.getStudentId();
+        }
+        simpMessagingTemplate.convertAndSendToUser(toId, "/private", messages);
+        simpMessagingTemplate.convertAndSend(messageService.saveMessageFromJSON(messages), messages);
+        return messages;
+    }
+
+
     @GetMapping("/get-active-semester")
     public ResponseEntity<Semester> getActiveSemester() {
         return ResponseEntity.ok(semesterService.getActiveSemester());
@@ -45,10 +66,10 @@ public class CommonController {
 
     //--------------------Message--------------------
     @MessageMapping("/room")
-    public void sendMessage(Messages messages) {
-        String toId = messages.getLecturer().toString();
-        if (messages.getFromId().equals(messages.getLecturer())) {
-            toId = messages.getStudent().toString();
+    public void sendMessage(@RequestBody Messages messages) {
+        String toId = messages.getLecturerId();
+        if (messages.getFromId().equals(messages.getLecturerId())) {
+            toId = messages.getStudentId();
         }
         simpMessagingTemplate.convertAndSendToUser(toId, "/topic/room", messages);
         simpMessagingTemplate.convertAndSend(messageService.saveMessageFromJSON(messages), messages);
@@ -63,10 +84,9 @@ public class CommonController {
     }
 
     @GetMapping("/message-list")
-    public List<Messages> getMessage(@RequestParam("pageNo") int pageNo, @RequestParam("pageSize") int pageSize) {
-        List<Messages> messages = new ArrayList<>();
-        messages.addAll(messagesRepository.findAll(PageRequest.of(pageNo, pageSize)).getContent());
-        return messages;
+    public ResponseEntity<List<?>> getMessagesInfo(@RequestParam("lecturerId") String lecturerId) {
+        String semesterId = semesterService.getActiveSemester().getId();
+        return ResponseEntity.ok(studentRepository.getMessagesInfo(semesterId, lecturerId));
     }
 
 

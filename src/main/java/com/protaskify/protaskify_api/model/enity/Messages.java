@@ -32,13 +32,13 @@ public class Messages {
 
 
     //--------------------Relationship--------------------
-    @ManyToOne
-    @JsonIgnore
-    @JoinColumn(name = "lecturer_id")
-    private Lecturer lecturer;
+//    @ManyToOne
+//    @JsonIgnore
+//    @JoinColumn(name = "lecturer_id")
+    private String lecturerId;
 
-    @ManyToOne
-    @JsonIgnore
-    @JoinColumn(name = "student_id")
-    private Student student;
+//    @ManyToOne
+//    @JsonIgnore
+//    @JoinColumn(name = "student_id")
+    private String studentId;
 }
